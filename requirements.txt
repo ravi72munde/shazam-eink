@@ -1,4 +1,4 @@
 spotipy
 pillow
 requests
-inky[rpi,example-depends]
+inky[rpi,example-depends]; sys_platform == "linux"
