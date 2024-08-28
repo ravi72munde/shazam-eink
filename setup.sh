@@ -19,8 +19,9 @@ fi
 echo
 echo "###### Clone shazampi-eink git"
 git clone https://github.com/ravi72munde/shazam-eink
-echo "Switching into instalation directory"
+echo "Switching into installation directory"
 cd shazampi-eink
+git checkout dev-01
 install_path=$(pwd)
 echo
 echo "##### Creating shazampi Python environment"
