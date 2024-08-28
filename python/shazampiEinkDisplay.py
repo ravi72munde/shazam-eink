@@ -309,8 +309,10 @@ class ShazampiEinkDisplay:
             SongInfo: with song name, album cover url, artist's name's
         """
         # record audio for n seconds
+        logging.debug("recording audio")
         raw_audio = self.audio_service.record_raw_audio(self.recording_duration)
         if self.music_detector.is_audio_music(raw_audio):
+            logging.debug("music detected, identifying....")
             # music detected, identify using shazam
             wav_audio = self.audio_service.convert_audio_to_wav_format(raw_audio)
             song_info_dict = self.shazam_service.identify_song(wav_audio)
