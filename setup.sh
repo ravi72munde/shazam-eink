@@ -18,7 +18,7 @@ if [ -d "shazampi-eink" ]; then
 fi
 echo
 echo "###### Clone shazampi-eink git"
-git clone https://github.com/ravi72munde/shazam-eink
+git clone https://github.com/ravi72munde/shazampi-eink
 echo "Switching into installation directory"
 cd shazampi-eink
 git checkout dev-01
@@ -31,6 +31,13 @@ source ${install_path}/shazampienv/bin/activate
 echo Install Python packages
 pip3 install -r requirements.txt --upgrade
 echo "##### shazampi Python environment created"
+echo
+echo "###### Generate config"
+if ! [ -d "${install_path}/config" ]; then
+    echo "creating  ${install_path}/config path"
+    mkdir -p "${install_path}/config"
+fi
+
 cd ${install_path}
 echo
 if ! [ -d "${install_path}/resources" ]; then
