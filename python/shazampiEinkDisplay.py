@@ -325,9 +325,13 @@ class ShazampiEinkDisplay:
             # music detected, identify using shazam
             wav_audio = self.audio_service.convert_audio_to_wav_format(raw_audio)
             song_info_dict = self.shazam_service.identify_song(wav_audio)
-            return SongInfo(title=song_info_dict['title'],
-                            artist=song_info_dict['artist'],
-                            album_art=song_info_dict['album_art'])
+            if song_info_dict:
+                logging.debug("found song")
+                return SongInfo(title=song_info_dict['title'],
+                                artist=song_info_dict['artist'],
+                                album_art=song_info_dict['album_art'])
+            else:
+                logging.debug("couldn't identify the music")
 
     def start(self):
         self.logger.info('Service started')
