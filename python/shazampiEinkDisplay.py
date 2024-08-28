@@ -309,10 +309,10 @@ class ShazampiEinkDisplay:
             SongInfo: with song name, album cover url, artist's name's
         """
         # record audio for n seconds
-        logging.debug("recording audio")
+        self.logger.debug("recording audio....")
         raw_audio = self.audio_service.record_raw_audio(self.recording_duration)
         if self.music_detector.is_audio_music(raw_audio):
-            logging.debug("music detected, identifying....")
+            self.logger.debug("music detected, identifying....")
             # music detected, identify using shazam
             wav_audio = self.audio_service.convert_audio_to_wav_format(raw_audio)
             song_info_dict = self.shazam_service.identify_song(wav_audio)
@@ -324,19 +324,20 @@ class ShazampiEinkDisplay:
         self.logger.info('Service started')
         # clean screen initially
         self._display_clean()
-        prev_song = None
+        prev_song_title = None
         try:
             while True:
                 try:
-                    song_info: SongInfo = self._get_song_info()
-                    if song_info and song_info != prev_song:
+                    song_info = self._get_song_info()
+                    if song_info and song_info.title != prev_song_title:
                         self._display_update_process(song_info)
-                        prev_song = song_info
-                        # average song time is 3-5 min so safe to sleep for 2 min(if delay is 30 sec)
-                        time.sleep(self.delay*4)  # sleep more avoid detecting same song again
+                        prev_song_title = song_info.title
+                        # average song time is 3-5 min so safe to sleep
+                        self.logger.debug(f'"will wake up after {self.delay} seconds"')
+                        time.sleep(self.delay)  # sleep more avoid detecting same song again
                     elif song_info is None:
                         # nothing playing to set display to NO SONG view
-                        self._display_update_process(song_info)
+                        self._display_update_process()
                 except Exception as e:
                     self.logger.error(f'Error: {e}')
                     self.logger.error(traceback.format_exc())
