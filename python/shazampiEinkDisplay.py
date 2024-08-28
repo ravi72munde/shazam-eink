@@ -2,6 +2,7 @@ import time
 import sys
 import logging
 from collections import namedtuple
+from enum import Enum
 from logging.handlers import RotatingFileHandler
 import os
 import traceback
@@ -16,6 +17,13 @@ from service.music_detector import MusicDetector
 from service.shazam_service import ShazamService
 
 SongInfo = namedtuple('SongInfo', ['title', 'artist', 'album_art'])
+
+
+class ViewState(Enum):
+    CLEAN = 0
+    PLAYING = 1
+    NOTHING_PLAYING = 2
+    UNKNOWN = 5
 
 
 class ShazampiEinkDisplay:
@@ -38,6 +46,7 @@ class ShazampiEinkDisplay:
         logger.addHandler(handler)
         # prep some vars before entering service loop
         self.pic_counter = 0
+        self.current_view = ViewState.UNKNOWN
         self.logger = self._init_logger()
         self.logger.info('Service instance created')
         if self.config.get('DEFAULT', 'model') == 'inky':
@@ -150,6 +159,7 @@ class ShazampiEinkDisplay:
                 epd = self.wave4.EPD()
                 epd.init()
                 epd.Clear()
+            self.current_view = ViewState.CLEAN
         except Exception as e:
             self.logger.error(f'Display clean error: {e}')
             self.logger.error(traceback.format_exc())
@@ -309,7 +319,6 @@ class ShazampiEinkDisplay:
             SongInfo: with song name, album cover url, artist's name's
         """
         # record audio for n seconds
-        self.logger.debug("recording audio....")
         raw_audio = self.audio_service.record_raw_audio(self.recording_duration)
         if self.music_detector.is_audio_music(raw_audio):
             self.logger.debug("music detected, identifying....")
@@ -331,13 +340,17 @@ class ShazampiEinkDisplay:
                     song_info = self._get_song_info()
                     if song_info and song_info.title != prev_song_title:
                         self._display_update_process(song_info)
+                        self.current_view = ViewState.PLAYING
                         prev_song_title = song_info.title
                         # average song time is 3-5 min so safe to sleep
                         self.logger.debug(f'"will wake up after {self.delay} seconds"')
                         time.sleep(self.delay)  # sleep more avoid detecting same song again
                     elif song_info is None:
                         # nothing playing to set display to NO SONG view
-                        self._display_update_process()
+                        # no need to reset everytime
+                        if self.current_view != ViewState.NOTHING_PLAYING:
+                            self._display_update_process()
+                            self.current_view = ViewState.NOTHING_PLAYING
                 except Exception as e:
                     self.logger.error(f'Error: {e}')
                     self.logger.error(traceback.format_exc())
