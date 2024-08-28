@@ -11,13 +11,21 @@ import requests
 import signal
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageEnhance
 
+from service.audio_service import AudioService
+from service.music_detector import MusicDetector
+from service.shazam_service import ShazamService
+
 SongInfo = namedtuple('SongInfo', ['title', 'artist', 'album_art'])
 
 
 class ShazampiEinkDisplay:
-    def __init__(self, delay=10):
+    def __init__(self, delay=10, recording_duration=10):
         signal.signal(signal.SIGTERM, self._handle_sigterm)
         self.delay = delay
+        self.recording_duration = recording_duration
+        self.audio_service = AudioService()
+        self.music_detector = MusicDetector()
+        self.shazam_service = ShazamService()
         # Configuration for the matrix
         self.config = configparser.ConfigParser()
         self.config.read(os.path.join(os.path.dirname(__file__), '..', 'config', 'eink_options.ini'))
@@ -298,13 +306,17 @@ class ShazampiEinkDisplay:
         """get the currently playing song
 
         Returns:
-            list: with song name, album cover url, artist's name's
+            SongInfo: with song name, album cover url, artist's name's
         """
-        return SongInfo(title="Setting Forth",
-                        artist="Eddie Vedder",
-                        album_art="https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/7d/20/b8/7d20b80e-a1eb-f983"
-                                  "-4a06"
-                                  "-9ce62297ee1a/00602567018261.rgb.jpg/400x400cc.jpg")
+        # record audio for n seconds
+        raw_audio = self.audio_service.record_raw_audio(self.recording_duration)
+        if self.music_detector.is_audio_music(raw_audio):
+            # music detected, identify using shazam
+            wav_audio = self.audio_service.convert_audio_to_wav_format(raw_audio)
+            song_info_dict = self.shazam_service.identify_song(wav_audio)
+            return SongInfo(title=song_info_dict['title'],
+                            artist=song_info_dict['artist'],
+                            album_art=song_info_dict['album_art'])
 
     def start(self):
         self.logger.info('Service started')

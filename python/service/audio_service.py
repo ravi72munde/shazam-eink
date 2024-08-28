@@ -1,0 +1,48 @@
+import io
+import logging
+
+import numpy as np
+import sounddevice as sd
+import scipy.io.wavfile as wav
+
+from scipy.signal import resample
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+class AudioService:
+    def __init__(self):
+        self.device_name_substring = 'USB'  # usb mics generally contain this in their name
+        self.final_sample_rate = 16000  # sample rate supported by ML model and Shazam API
+        self.recording_sample_rate = 44100  # only supported rate by raspberry pi zero
+        device_index = self.find_device_idx_by_name()
+
+        if device_index is not None:
+            sd.default.device = (device_index, None)
+        else:
+            logger.warning(f"{self.device_name_substring} device not found. Using default audio device.")
+
+    def find_device_idx_by_name(self):
+        devices = sd.query_devices()
+        for idx, device in enumerate(devices):
+            if self.device_name_substring in device['name']:
+                return idx
+        return None
+
+    def is_mic_connected(self):
+        return self.find_device_idx_by_name() is not None
+
+    def record_raw_audio(self, recording_duration):
+        audio = sd.rec(int(recording_duration * self.recording_sample_rate),
+                       samplerate=self.recording_sample_rate, channels=1, dtype=np.float32)
+        sd.wait()
+        num_samples = int(len(audio) * self.final_sample_rate / self.recording_sample_rate)
+        resampled_audio = resample(audio, num_samples)
+        return np.squeeze(resampled_audio)
+
+    def convert_audio_to_wav_format(self, raw_audio):
+        audio_buffer = io.BytesIO()
+        wav.write(audio_buffer, self.final_sample_rate, raw_audio)
+        audio_buffer.seek(0)
+        return audio_buffer
