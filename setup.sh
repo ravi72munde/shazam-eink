@@ -12,57 +12,24 @@ echo
 echo "###### Ensure system packages are installed:"
 sudo apt-get install python3-pip python3-venv python3-numpy git libopenjp2-7 -y
 echo
-if [ -d "spotipi-eink" ]; then
+if [ -d "shazampi-eink" ]; then
     echo "Old installation found deleting it"
-    sudo rm -rf spotipi-eink
+    sudo rm -rf shazampi-eink
 fi
 echo
-echo "###### Clone spotipy-eink git"
-git clone https://github.com/Gabbajoe/spotipi-eink
+echo "###### Clone shazampi-eink git"
+git clone https://github.com/ravi72munde/shazam-eink
 echo "Switching into instalation directory"
-cd spotipi-eink
+cd shazampi-eink
 install_path=$(pwd)
 echo
-echo "##### Creating Spotipi Python environment"
-python3 -m venv --system-site-packages spotipienv
-echo "Activating Spotipi Python environment"
-source ${install_path}/spotipienv/bin/activate
-echo Install Python packages: spotipy, pillow, requests, inky impression
+echo "##### Creating shazampi Python environment"
+python3 -m venv --system-site-packages shazampienv
+echo "Activating shazampi Python environment"
+source ${install_path}/shazampienv/bin/activate
+echo Install Python packages
 pip3 install -r requirements.txt --upgrade
-echo "##### Spotipi Python environment created" 
-echo
-echo "###### Generate Spotify Token"
-if ! [ -d "${install_path}/config" ]; then
-    echo "creating  ${install_path}/config path"
-    mkdir -p "${install_path}/config"
-fi
-cd ${install_path}/config
-echo "Enter your Spotify Client ID:"
-read spotify_client_id
-export SPOTIPY_CLIENT_ID=$spotify_client_id
-
-echo "Enter your Spotify Client Secret:"
-read spotify_client_secret
-export SPOTIPY_CLIENT_SECRET=$spotify_client_secret
-
-echo "Enter your Spotify Redirect URI:"
-read spotify_redirect_uri
-export SPOTIPY_REDIRECT_URI=$spotify_redirect_uri
-
-echo "Enter your spotify username:"
-read spotify_username
-
-python3 ${install_path}/python/generateToken.py $spotify_username
-
-if [ -f "${install_path}/config/.cache" ]; then
-    spotify_token_path="${install_path}/config/.cache"
-    echo "Use $spotify_token_path"
-else
-    echo "Unable to find ${install_path}/.cache"
-    echo "Please enter the full path to your spotify token file (including /.cache):"
-    read spotify_token_path
-fi
-echo "###### Spotify Token Created"
+echo "##### shazampi Python environment created"
 cd ${install_path}
 echo
 if ! [ -d "${install_path}/resources" ]; then
@@ -126,9 +93,7 @@ echo "album_cover_small = True" >> ${install_path}/config/eink_options.ini
 echo "; cleans the display every 20 picture" >> ${install_path}/config/eink_options.ini
 echo "; this takes ~60 seconds" >> ${install_path}/config/eink_options.ini
 echo "display_refresh_counter = 20" >> ${install_path}/config/eink_options.ini
-echo "username = ${spotify_username}" >> ${install_path}/config/eink_options.ini
-echo "token_file = ${spotify_token_path}" >> ${install_path}/config/eink_options.ini
-echo "spotipy_log = ${install_path}/log/spotipy.log" >> ${install_path}/config/eink_options.ini
+echo "shazampi_log = ${install_path}/log/shazampi.log" >> ${install_path}/config/eink_options.ini
 echo "no_song_cover = ${install_path}/resources/default.jpg" >> ${install_path}/config/eink_options.ini
 echo "font_path = ${install_path}/resources/CircularStd-Bold.otf" >> ${install_path}/config/eink_options.ini
 echo "font_size_title = 45" >> ${install_path}/config/eink_options.ini
@@ -149,70 +114,32 @@ if ! [ -d "${install_path}/log" ]; then
     mkdir "${install_path}/log"
 fi
 echo
-echo "###### Spotipi-eink-display update service installation"
+echo "###### shazampi-eink-display update service installation"
 echo
-if [ -f "/etc/systemd/system/spotipi-eink-display.service" ]; then
+if [ -f "/etc/systemd/system/shazampi-eink-display.service" ]; then
     echo
-    echo "Removing old spotipi-eink-display service:"
-    sudo systemctl stop spotipi-eink-display
-    sudo systemctl disable spotipi-eink-display
-    sudo rm -rf /etc/systemd/system/spotipi-eink-display.*
+    echo "Removing old shazampi-eink-display service:"
+    sudo systemctl stop shazampi-eink-display
+    sudo systemctl disable shazampi-eink-display
+    sudo rm -rf /etc/systemd/system/shazampi-eink-display.*
     sudo systemctl daemon-reload
     echo "...done"
 fi
 UID_TO_USE=$(id -u)
 GID_TO_USE=$(id -g)
 echo
-echo "Creating spotipi-eink-display service:"
-sudo cp "${install_path}/setup/service_template/spotipi-eink-display.service" /etc/systemd/system/
-sudo sed -i -e "/\[Service\]/a ExecStart=${install_path}/spotipienv/bin/python3 ${install_path}/python/spotipiEinkDisplay.py" /etc/systemd/system/spotipi-eink-display.service
-sudo sed -i -e "/ExecStart/a WorkingDirectory=${install_path}" /etc/systemd/system/spotipi-eink-display.service
-sudo sed -i -e "/EnvironmentFile/a User=${UID_TO_USE}" /etc/systemd/system/spotipi-eink-display.service
-sudo sed -i -e "/User/a Group=${GID_TO_USE}" /etc/systemd/system/spotipi-eink-display.service
-sudo mkdir /etc/systemd/system/spotipi-eink-display.service.d
-spotipi_env_path=/etc/systemd/system/spotipi-eink-display.service.d/spotipi-eink-display_env.conf
-sudo touch $spotipi_env_path
-echo "[Service]" | sudo tee -a $spotipi_env_path > /dev/null
-echo "Environment=\"SPOTIPY_CLIENT_ID=${spotify_client_id}\"" | sudo tee -a $spotipi_env_path > /dev/null
-echo "Environment=\"SPOTIPY_CLIENT_SECRET=${spotify_client_secret}\"" | sudo tee -a $spotipi_env_path > /dev/null
-echo "Environment=\"SPOTIPY_REDIRECT_URI=${spotify_redirect_uri}\"" | sudo tee -a $spotipi_env_path > /dev/null
+echo "Creating shazampi-eink-display service:"
+sudo cp "${install_path}/setup/service_template/shazampi-eink-display.service" /etc/systemd/system/
+sudo sed -i -e "/\[Service\]/a ExecStart=${install_path}/shazampienv/bin/python3 ${install_path}/python/shazampiEinkDisplay.py" /etc/systemd/system/shazampi-eink-display.service
+sudo sed -i -e "/ExecStart/a WorkingDirectory=${install_path}" /etc/systemd/system/shazampi-eink-display.service
+sudo sed -i -e "/EnvironmentFile/a User=${UID_TO_USE}" /etc/systemd/system/shazampi-eink-display.service
+sudo sed -i -e "/User/a Group=${GID_TO_USE}" /etc/systemd/system/shazampi-eink-display.service
+sudo mkdir /etc/systemd/system/shazampi-eink-display.service.d
+shazampi_env_path=/etc/systemd/system/shazampi-eink-display.service.d/shazampi-eink-display_env.conf
+sudo touch $shazampi_env_path
+echo "[Service]" | sudo tee -a $shazampi_env_path > /dev/null
 sudo systemctl daemon-reload
-sudo systemctl start spotipi-eink-display
-sudo systemctl enable spotipi-eink-display
+sudo systemctl start shazampi-eink-display
+sudo systemctl enable shazampi-eink-display
 echo "...done"
-echo
-if [ "$BUTTONS" -eq "1" ]; then
-    echo "###### Spotipi-eink button action service installation"
-    echo
-    if [ -f "/etc/systemd/system/spotipi-eink-buttons.service" ]; then
-        echo
-        echo "Removing old spotipi-eink-buttons service:"
-        sudo systemctl stop spotipi-eink-buttons
-        sudo systemctl disable spotipi-eink-buttons
-        sudo rm -rf /etc/systemd/system/spotipi-eink-buttons.*
-        sudo systemctl daemon-reload
-        echo "...done"
-    fi
-    echo
-    echo "Creating spotipi-eink-buttons service:"
-    sudo cp "${install_path}/setup/service_template/spotipi-eink-buttons.service" /etc/systemd/system/
-    sudo sed -i -e "/\[Service\]/a ExecStart=${install_path}/spotipienv/bin/python3 ${install_path}/python/buttonActions.py" /etc/systemd/system/spotipi-eink-buttons.service
-    sudo sed -i -e "/ExecStart/a WorkingDirectory=${install_path}" /etc/systemd/system/spotipi-eink-buttons.service
-    sudo sed -i -e "/EnvironmentFile/a User=${UID_TO_USE}" /etc/systemd/system/spotipi-eink-buttons.service
-    sudo sed -i -e "/User/a Group=${GID_TO_USE}" /etc/systemd/system/spotipi-eink-buttons.service
-    sudo mkdir /etc/systemd/system/spotipi-eink-buttons.service.d
-    spotipi_buttons_env_path=/etc/systemd/system/spotipi-eink-buttons.service.d/spotipi-eink-buttons_env.conf
-    sudo touch $spotipi_buttons_env_path
-    echo "[Service]" | sudo tee -a $spotipi_buttons_env_path > /dev/null
-    echo "Environment=\"SPOTIPY_CLIENT_ID=${spotify_client_id}\"" | sudo tee -a $spotipi_buttons_env_path > /dev/null
-    echo "Environment=\"SPOTIPY_CLIENT_SECRET=${spotify_client_secret}\"" | sudo tee -a $spotipi_buttons_env_path > /dev/null
-    echo "Environment=\"SPOTIPY_REDIRECT_URI=${spotify_redirect_uri}\"" | sudo tee -a $spotipi_buttons_env_path > /dev/null
-    sudo systemctl daemon-reload
-    sudo systemctl start spotipi-eink-buttons
-    sudo systemctl enable spotipi-eink-buttons
-    echo "...done"
-else
-    echo "###### Skipping Spotipi-eink button action service installation"
-fi
-echo
 echo "SETUP IS COMPLETE"

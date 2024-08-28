@@ -1,49 +1,34 @@
 import time
 import sys
 import logging
+from collections import namedtuple
 from logging.handlers import RotatingFileHandler
-import spotipy
-import spotipy.util as util
 import os
 import traceback
 import configparser
+
 import requests
 import signal
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageEnhance
 
-
-# recursion limiter for get song info to not go to infinity as decorator
-def limit_recursion(limit):
-    def inner(func):
-        func.count = 0
-
-        def wrapper(*args, **kwargs):
-            func.count += 1
-            if func.count < limit:
-                result = func(*args, **kwargs)
-            else:
-                result = None
-            func.count -= 1
-            return result
-        return wrapper
-    return inner
+SongInfo = namedtuple('SongInfo', ['title', 'artist', 'album_art'])
 
 
-class SpotipiEinkDisplay:
+class ShazampiEinkDisplay:
     def __init__(self, delay=1):
         signal.signal(signal.SIGTERM, self._handle_sigterm)
         self.delay = delay
         # Configuration for the matrix
         self.config = configparser.ConfigParser()
         self.config.read(os.path.join(os.path.dirname(__file__), '..', 'config', 'eink_options.ini'))
-        # set spotipoy lib logger
-        logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', filename=self.config.get('DEFAULT', 'spotipy_log'), level=logging.INFO)
-        logger = logging.getLogger('spotipy_logger')
+        # set shazampi lib logger
+        logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S',
+                            filename=self.config.get('DEFAULT', 'shazampi_log'), level=logging.INFO)
+        logger = logging.getLogger('shazampi_logger')
         # automatically deletes logs more than 2000 bytes
-        handler = RotatingFileHandler(self.config.get('DEFAULT', 'spotipy_log'), maxBytes=2000, backupCount=3)
+        handler = RotatingFileHandler(self.config.get('DEFAULT', 'shazampi_log'), maxBytes=2000, backupCount=3)
         logger.addHandler(handler)
         # prep some vars before entering service loop
-        self.song_prev = ''
         self.pic_counter = 0
         self.logger = self._init_logger()
         self.logger.info('Service instance created')
@@ -63,7 +48,7 @@ class SpotipiEinkDisplay:
         logger.setLevel(logging.DEBUG)
         stdout_handler = logging.StreamHandler()
         stdout_handler.setLevel(logging.DEBUG)
-        stdout_handler.setFormatter(logging.Formatter('Spotipi eInk Display - %(message)s'))
+        stdout_handler.setFormatter(logging.Formatter('Shazampi eInk Display - %(message)s'))
         logger.addHandler(stdout_handler)
         return logger
 
@@ -94,7 +79,9 @@ class SpotipiEinkDisplay:
         yield t, w
         yield from self._break_fix(text[lo:], width, font, draw)
 
-    def _fit_text_top_down(self, img: Image, text: str, text_color: str, shadow_text_color: str, font: ImageFont, y_offset: int, font_size: int, x_start_offset: int = 0, x_end_offset: int = 0, offset_text_px_shadow: int = 0) -> int:
+    def _fit_text_top_down(self, img: Image, text: str, text_color: str, shadow_text_color: str, font: ImageFont,
+                           y_offset: int, font_size: int, x_start_offset: int = 0, x_end_offset: int = 0,
+                           offset_text_px_shadow: int = 0) -> int:
         """
         Fit text into container after applying line breaks. Returns the total
         height taken up by the text
@@ -106,14 +93,17 @@ class SpotipiEinkDisplay:
         h_taken_by_text = 0
         for t, _ in pieces:
             if offset_text_px_shadow > 0:
-                draw.text((x_start_offset + offset_text_px_shadow, y + offset_text_px_shadow), t, font=font, fill=shadow_text_color)
+                draw.text((x_start_offset + offset_text_px_shadow, y + offset_text_px_shadow), t, font=font,
+                          fill=shadow_text_color)
             draw.text((x_start_offset, y), t, font=font, fill=text_color)
             new_height = font_size
             y += font_size
             h_taken_by_text += new_height
         return h_taken_by_text
 
-    def _fit_text_bottom_up(self, img: Image, text: str, text_color: str, shadow_text_color: str, font: ImageFont, y_offset: int, font_size: int, x_start_offset: int = 0, x_end_offset: int = 0, offset_text_px_shadow: int = 0) -> int:
+    def _fit_text_bottom_up(self, img: Image, text: str, text_color: str, shadow_text_color: str, font: ImageFont,
+                            y_offset: int, font_size: int, x_start_offset: int = 0, x_end_offset: int = 0,
+                            offset_text_px_shadow: int = 0) -> int:
         """
         Fit text into container after applying line breaks. Returns the total
         height taken up by the text
@@ -127,7 +117,8 @@ class SpotipiEinkDisplay:
         h_taken_by_text = 0
         for t, _ in pieces:
             if offset_text_px_shadow > 0:
-                draw.text((x_start_offset + offset_text_px_shadow, y + offset_text_px_shadow), t, font=font, fill=shadow_text_color)
+                draw.text((x_start_offset + offset_text_px_shadow, y + offset_text_px_shadow), t, font=font,
+                          fill=shadow_text_color)
             draw.text((x_start_offset, y), t, font=font, fill=text_color)
             new_height = font_size
             y += font_size
@@ -222,15 +213,18 @@ class SpotipiEinkDisplay:
         bg_w, bg_h = image.size
         if self.config.get('DEFAULT', 'background_mode') == 'fit':
             if bg_w < self.config.getint('DEFAULT', 'width') or bg_w > self.config.getint('DEFAULT', 'width'):
-                image_new = ImageOps.fit(image=image, size=(self.config.getint('DEFAULT', 'width'), self.config.getint('DEFAULT', 'height')), centering=(0, 0))
+                image_new = ImageOps.fit(image=image, size=(
+                    self.config.getint('DEFAULT', 'width'), self.config.getint('DEFAULT', 'height')), centering=(0, 0))
             else:
                 # no need to expand just crop
-                image_new = image.crop((0, 0, self.config.getint('DEFAULT', 'width'), self.config.getint('DEFAULT', 'height')))
+                image_new = image.crop(
+                    (0, 0, self.config.getint('DEFAULT', 'width'), self.config.getint('DEFAULT', 'height')))
         if self.config.get('DEFAULT', 'background_mode') == 'repeat':
             if bg_w < self.config.getint('DEFAULT', 'width') or bg_h < self.config.getint('DEFAULT', 'height'):
                 # we need to repeat the background
                 # Creates a new empty image, RGB mode, and size of the display
-                image_new = Image.new('RGB', (self.config.getint('DEFAULT', 'width'), self.config.getint('DEFAULT', 'height')))
+                image_new = Image.new('RGB',
+                                      (self.config.getint('DEFAULT', 'width'), self.config.getint('DEFAULT', 'height')))
                 # Iterate through a grid, to place the background tile
                 for x in range(0, self.config.getint('DEFAULT', 'width'), bg_w):
                     for y in range(0, self.config.getint('DEFAULT', 'height'), bg_h):
@@ -238,42 +232,61 @@ class SpotipiEinkDisplay:
                         image_new.paste(image, (x, y))
             else:
                 # no need to repeat just crop
-                image_new = image.crop((0, 0, self.config.getint('DEFAULT', 'width'), self.config.getint('DEFAULT', 'height')))
+                image_new = image.crop(
+                    (0, 0, self.config.getint('DEFAULT', 'width'), self.config.getint('DEFAULT', 'height')))
         if self.config.getboolean('DEFAULT', 'album_cover_small'):
             cover_smaller = image.resize([album_cover_small_px, album_cover_small_px], Image.LANCZOS)
             album_pos_x = (self.config.getint('DEFAULT', 'width') - album_cover_small_px) // 2
             image_new.paste(cover_smaller, [album_pos_x, offset_px_top])
-        font_title = ImageFont.truetype(self.config.get('DEFAULT', 'font_path'), self.config.getint('DEFAULT', 'font_size_title'))
-        font_artist = ImageFont.truetype(self.config.get('DEFAULT', 'font_path'), self.config.getint('DEFAULT', 'font_size_artist'))
+        font_title = ImageFont.truetype(self.config.get('DEFAULT', 'font_path'),
+                                        self.config.getint('DEFAULT', 'font_size_title'))
+        font_artist = ImageFont.truetype(self.config.get('DEFAULT', 'font_path'),
+                                         self.config.getint('DEFAULT', 'font_size_artist'))
         if text_direction == 'top-down':
             title_position_y = album_cover_small_px + offset_px_top + 10
-            title_height = self._fit_text_top_down(img=image_new, text=title, text_color='white', shadow_text_color='black', font=font_title, font_size=self.config.getint('DEFAULT', 'font_size_title'), y_offset=title_position_y, x_start_offset=offset_px_left, x_end_offset=offset_px_right, offset_text_px_shadow=offset_text_px_shadow)
+            title_height = self._fit_text_top_down(img=image_new, text=title, text_color='white',
+                                                   shadow_text_color='black', font=font_title,
+                                                   font_size=self.config.getint('DEFAULT', 'font_size_title'),
+                                                   y_offset=title_position_y, x_start_offset=offset_px_left,
+                                                   x_end_offset=offset_px_right,
+                                                   offset_text_px_shadow=offset_text_px_shadow)
             artist_position_y = album_cover_small_px + offset_px_top + 10 + title_height
-            self._fit_text_top_down(img=image_new, text=artist, text_color='white', shadow_text_color='black', font=font_artist, font_size=self.config.getint('DEFAULT', 'font_size_artist'), y_offset=artist_position_y, x_start_offset=offset_px_left, x_end_offset=offset_px_right, offset_text_px_shadow=offset_text_px_shadow)
+            self._fit_text_top_down(img=image_new, text=artist, text_color='white', shadow_text_color='black',
+                                    font=font_artist, font_size=self.config.getint('DEFAULT', 'font_size_artist'),
+                                    y_offset=artist_position_y, x_start_offset=offset_px_left,
+                                    x_end_offset=offset_px_right, offset_text_px_shadow=offset_text_px_shadow)
         if text_direction == 'bottom-up':
-            artist_position_y = self.config.getint('DEFAULT', 'height') - (offset_px_bottom + self.config.getint('DEFAULT', 'font_size_artist'))
-            artist_height = self._fit_text_bottom_up(img=image_new, text=artist, text_color='white', shadow_text_color='black', font=font_artist, font_size=self.config.getint('DEFAULT', 'font_size_artist'), y_offset=artist_position_y, x_start_offset=offset_px_left, x_end_offset=offset_px_right, offset_text_px_shadow=offset_text_px_shadow)
-            title_position_y = self.config.getint('DEFAULT', 'height') - (offset_px_bottom + self.config.getint('DEFAULT', 'font_size_title')) - artist_height
-            self._fit_text_bottom_up(img=image_new, text=title, text_color='white', shadow_text_color='black', font=font_title, font_size=self.config.getint('DEFAULT', 'font_size_title'), y_offset=title_position_y, x_start_offset=offset_px_left, x_end_offset=offset_px_right, offset_text_px_shadow=offset_text_px_shadow)
+            artist_position_y = self.config.getint('DEFAULT', 'height') - (
+                    offset_px_bottom + self.config.getint('DEFAULT', 'font_size_artist'))
+            artist_height = self._fit_text_bottom_up(img=image_new, text=artist, text_color='white',
+                                                     shadow_text_color='black', font=font_artist,
+                                                     font_size=self.config.getint('DEFAULT', 'font_size_artist'),
+                                                     y_offset=artist_position_y, x_start_offset=offset_px_left,
+                                                     x_end_offset=offset_px_right,
+                                                     offset_text_px_shadow=offset_text_px_shadow)
+            title_position_y = self.config.getint('DEFAULT', 'height') - (
+                    offset_px_bottom + self.config.getint('DEFAULT', 'font_size_title')) - artist_height
+            self._fit_text_bottom_up(img=image_new, text=title, text_color='white', shadow_text_color='black',
+                                     font=font_title, font_size=self.config.getint('DEFAULT', 'font_size_title'),
+                                     y_offset=title_position_y, x_start_offset=offset_px_left,
+                                     x_end_offset=offset_px_right, offset_text_px_shadow=offset_text_px_shadow)
         return image_new
 
-    def _display_update_process(self, song_request: list):
-        """Display update process that jude by the song_request list if a song is playing and we need to download the album cover or not
-
+    def _display_update_process(self, song_info: SongInfo):
+        """
         Args:
-            song_request (list): song_request list
-            config (configparser.ConfigParser): config object
-            pic_counter (int): picture refresh counter
-
+            song_info (SongInfo)
         Returns:
             int: updated picture refresh counter
         """
-        if song_request:
+        if song_info:
             # download cover
-            image = self._gen_pic(Image.open(requests.get(song_request[1], stream=True).raw), song_request[2], song_request[0])
+            image = self._gen_pic(Image.open(requests.get(song_info.album_art, stream=True).raw), song_info.artist,
+                                  song_info.title)
         else:
             # not song playing use logo
-            image = self._gen_pic(Image.open(self.config.get('DEFAULT', 'no_song_cover')), 'spotipi-eink', 'No song playing')
+            image = self._gen_pic(Image.open(self.config.get('DEFAULT', 'no_song_cover')), 'shazampi-eink',
+                                  'No song playing')
         # clean screen every x pics
         if self.pic_counter > self.config.getint('DEFAULT', 'display_refresh_counter'):
             self._display_clean()
@@ -282,56 +295,16 @@ class SpotipiEinkDisplay:
         self._display_image(image)
         self.pic_counter += 1
 
-    @limit_recursion(limit=10)
-    def _get_song_info(self) -> list:
-        """get the current played song from Spotifys Web API
+    def _get_song_info(self) -> SongInfo:
+        """get the currently playing song
 
         Returns:
             list: with song name, album cover url, artist's name's
         """
-        scope = 'user-read-currently-playing,user-modify-playback-state'
-        token = util.prompt_for_user_token(username=self.config.get('DEFAULT', 'username'), scope=scope, cache_path=self.config.get('DEFAULT', 'token_file'))
-        if token:
-            sp = spotipy.Spotify(auth=token)
-            result = sp.currently_playing(additional_types='episode')
-            if result:
-                try:
-                    if result['currently_playing_type'] == 'episode':
-                        song = result["item"]["name"]
-                        artist_name = result["item"]["show"]["name"]
-                        song_pic_url = result["item"]["images"][0]["url"]
-                        return [song, song_pic_url, artist_name]
-                    if result['currently_playing_type'] == 'track':
-                        song = result["item"]["name"]
-                        artist_name = ''
-                        for artists_tmp in result["item"]["artists"]:
-                            if artist_name:
-                                artist_name += ', '
-                            artist_name += artists_tmp["name"]
-                        song_pic_url = result["item"]["album"]["images"][0]["url"]
-                        return [song, song_pic_url, artist_name]
-                    if result['currently_playing_type'] == 'unknown':
-                        # we hit the moment when spotify api has no known state about the client
-                        # simply lets retry a short moment again
-                        time.sleep(0.01)
-                        return self._get_song_info()
-                    if result['currently_playing_type'] == 'ad':
-                        # a ad is playing.. lets say no song is playing....
-                        return []
-                    # we should never hit this
-                    self.logger.error(f'Error: Unsupported currently_playing_type: {result["currently_playing_type"]}')
-                    self.logger.error(f'Error: Spotify currently_playing result content: {result}')
-                except TypeError:
-                    # https://stackoverflow.com/questions/69253296/spotipy-typeerror-nonetype-object-is-not-subscriptable-when-trying-to-acce
-                    # catch this error and simply try again.
-                    # try to get it again a short amount of time later
-                    self.logger.error('Error: TypeError')
-                    time.sleep(0.01)
-                    return self._get_song_info()
-            return []
-        else:
-            self.logger.error(f"Error: Can't get token for {self.config.get('DEFAULT', 'username')}")
-            return []
+        return SongInfo(title="Setting Forth",
+                        artist="Eddie Vedder",
+                        album_art="https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/7d/20/b8/7d20b80e-a1eb-f983-4a06"
+                                  "-9ce62297ee1a/00602567018261.rgb.jpg/400x400cc.jpg")
 
     def start(self):
         self.logger.info('Service started')
@@ -340,16 +313,9 @@ class SpotipiEinkDisplay:
         try:
             while True:
                 try:
-                    song_request = self._get_song_info()
-                    if song_request:
-                        if self.song_prev != song_request[0] + song_request[1]:
-                            self.song_prev = song_request[0] + song_request[1]
-                            self._display_update_process(song_request=song_request)
-                    if not song_request:
-                        if self.song_prev != 'NO_SONG':
-                            # set fake song name to update only once if no song is playing.
-                            self.song_prev = 'NO_SONG'
-                            self._display_update_process(song_request=song_request)
+                    song_info: SongInfo = self._get_song_info()
+                    if song_info:
+                        self._display_update_process(song_info)
                 except Exception as e:
                     self.logger.error(f'Error: {e}')
                     self.logger.error(traceback.format_exc())
@@ -360,5 +326,5 @@ class SpotipiEinkDisplay:
 
 
 if __name__ == "__main__":
-    service = SpotipiEinkDisplay()
+    service = ShazampiEinkDisplay()
     service.start()
