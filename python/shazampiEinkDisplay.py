@@ -19,7 +19,7 @@ SongInfo = namedtuple('SongInfo', ['title', 'artist', 'album_art'])
 
 
 class ShazampiEinkDisplay:
-    def __init__(self, delay=10, recording_duration=10):
+    def __init__(self, delay=30, recording_duration=10):
         signal.signal(signal.SIGTERM, self._handle_sigterm)
         self.delay = delay
         self.recording_duration = recording_duration
@@ -279,7 +279,7 @@ class ShazampiEinkDisplay:
                                      x_end_offset=offset_px_right, offset_text_px_shadow=offset_text_px_shadow)
         return image_new
 
-    def _display_update_process(self, song_info: SongInfo):
+    def _display_update_process(self, song_info: SongInfo = None):
         """
         Args:
             song_info (SongInfo)
@@ -322,11 +322,18 @@ class ShazampiEinkDisplay:
         self.logger.info('Service started')
         # clean screen initially
         self._display_clean()
+        prev_song = None
         try:
             while True:
                 try:
                     song_info: SongInfo = self._get_song_info()
-                    if song_info:
+                    if song_info and song_info != prev_song:
+                        self._display_update_process(song_info)
+                        prev_song = song_info
+                        # average song time is 3-5 min so safe to sleep for 2 min(if delay is 30 sec)
+                        time.sleep(self.delay*4)  # sleep more avoid detecting same song again
+                    elif song_info is None:
+                        # nothing playing to set display to NO SONG view
                         self._display_update_process(song_info)
                 except Exception as e:
                     self.logger.error(f'Error: {e}')
