@@ -3,6 +3,16 @@ if [[ $EUID -eq 0 ]]; then
   echo "This script must NOT be run as root" 1>&2
   exit 1
 fi
+echo "Checking SPI status..."
+
+# Check if SPI device files exist
+if [[ -e /dev/spidev0.0 ]] || [[ -e /dev/spidev0.1 ]]; then
+    echo "SPI is enabled."
+else
+    echo "SPI is not enabled. Please enable SPI in raspi-config and try again." >&2
+    exit 1
+fi
+
 echo "###### Update Packages list"
 sudo apt update
 echo
