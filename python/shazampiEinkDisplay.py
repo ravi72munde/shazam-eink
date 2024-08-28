@@ -15,7 +15,7 @@ SongInfo = namedtuple('SongInfo', ['title', 'artist', 'album_art'])
 
 
 class ShazampiEinkDisplay:
-    def __init__(self, delay=1):
+    def __init__(self, delay=10):
         signal.signal(signal.SIGTERM, self._handle_sigterm)
         self.delay = delay
         # Configuration for the matrix
@@ -194,7 +194,6 @@ class ShazampiEinkDisplay:
         """Generates the Picture for the display
 
         Args:
-            config (configparser.ConfigParser): Config parser object
             image (Image): album cover to be used
             artist (str): Artist text
             title (str): Song text
@@ -303,7 +302,8 @@ class ShazampiEinkDisplay:
         """
         return SongInfo(title="Setting Forth",
                         artist="Eddie Vedder",
-                        album_art="https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/7d/20/b8/7d20b80e-a1eb-f983-4a06"
+                        album_art="https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/7d/20/b8/7d20b80e-a1eb-f983"
+                                  "-4a06"
                                   "-9ce62297ee1a/00602567018261.rgb.jpg/400x400cc.jpg")
 
     def start(self):
