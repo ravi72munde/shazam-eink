@@ -32,7 +32,7 @@ class ShazampiEinkDisplay:
         self.delay = delay
         self.recording_duration = recording_duration
         self.audio_service = AudioService()
-        self.music_detector = MusicDetector()
+        self.music_detector = MusicDetector(self.recording_duration)
         self.shazam_service = ShazamService()
         # Configuration for the matrix
         self.config = configparser.ConfigParser()

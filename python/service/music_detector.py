@@ -10,16 +10,15 @@ cache_lock = threading.Lock()
 
 
 class MusicDetector:
-    def __init__(self):
+    def __init__(self, recording_duration):
         try:
             from tflite_runtime.interpreter import Interpreter
             self.interpreter = Interpreter('./ml-model/1.tflite')
         except ModuleNotFoundError:
             import tensorflow as tf
             self.interpreter = tf.lite.Interpreter('./ml-model/1.tflite')
-        self.recording_duration = 10
-        self.final_sample_rate = 16000
-        self.recording_sample_rate = 44100
+        self.down_sampled_rate = 16000
+        self.raw_recording_sample_rate = 44100
         self.input_details = self.interpreter.get_input_details()
         self.output_details = self.interpreter.get_output_details()
         self.waveform_input_index = self.input_details[0]['index']
@@ -27,7 +26,7 @@ class MusicDetector:
         self.embeddings_output_index = self.output_details[1]['index']
         self.spectrogram_output_index = self.output_details[2]['index']
         self.interpreter.resize_tensor_input(self.waveform_input_index,
-                                             [self.recording_duration * self.final_sample_rate], strict=True)
+                                             [recording_duration * self.down_sampled_rate], strict=True)
         self.interpreter.allocate_tensors()
 
         self.class_names = None

@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 class AudioService:
     def __init__(self):
         self.device_name_substring = 'USB'  # usb mics generally contain this in their name
-        self.final_sample_rate = 16000  # sample rate supported by ML model and Shazam API
-        self.recording_sample_rate = 44100  # only supported rate by raspberry pi zero
+        self.down_sampled_rate = 16000  # sample rate supported by ML model and Shazam API
+        self.raw_recording_sample_rate = 44100  # only supported rate by raspberry pi zero
         device_index = self.find_device_idx_by_name()
 
         if device_index is not None:
@@ -34,15 +34,15 @@ class AudioService:
         return self.find_device_idx_by_name() is not None
 
     def record_raw_audio(self, recording_duration):
-        audio = sd.rec(int(recording_duration * self.recording_sample_rate),
-                       samplerate=self.recording_sample_rate, channels=1, dtype=np.float32)
+        audio = sd.rec(int(recording_duration * self.raw_recording_sample_rate),
+                       samplerate=self.raw_recording_sample_rate, channels=1, dtype=np.float32)
         sd.wait()
-        num_samples = int(len(audio) * self.final_sample_rate / self.recording_sample_rate)
+        num_samples = int(len(audio) * self.down_sampled_rate / self.raw_recording_sample_rate)
         resampled_audio = resample(audio, num_samples)
         return np.squeeze(resampled_audio)
 
     def convert_audio_to_wav_format(self, raw_audio):
         audio_buffer = io.BytesIO()
-        wav.write(audio_buffer, self.final_sample_rate, raw_audio)
+        wav.write(audio_buffer, self.down_sampled_rate, raw_audio)
         audio_buffer.seek(0)
         return audio_buffer
