@@ -13,10 +13,10 @@ class MusicDetector:
     def __init__(self, recording_duration):
         try:
             from tflite_runtime.interpreter import Interpreter
-            self.interpreter = Interpreter('./ml-model/1.tflite')
+            self.interpreter = Interpreter('python/ml-model/1.tflite')
         except ModuleNotFoundError:
             import tensorflow as tf
-            self.interpreter = tf.lite.Interpreter('./ml-model/1.tflite')
+            self.interpreter = tf.lite.Interpreter('python/ml-model/1.tflite')
         self.down_sampled_rate = 16000
         self.raw_recording_sample_rate = 44100
         self.input_details = self.interpreter.get_input_details()
@@ -30,7 +30,7 @@ class MusicDetector:
         self.interpreter.allocate_tensors()
 
         self.class_names = None
-        with open('./ml-model/yamnet_class_map.csv') as csv_file:
+        with open('python/ml-model/yamnet_class_map.csv') as csv_file:
             class_map_csv = io.StringIO(csv_file.read())
             self.class_names = [display_name for (class_index, mid, display_name) in csv.reader(class_map_csv)]
             self.class_names = self.class_names[1:]  # Skip header
