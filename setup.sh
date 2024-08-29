@@ -13,11 +13,11 @@ else
     exit 1
 fi
 
-#echo "###### Update Packages list"
-#sudo apt update
-#echo
-#echo "###### Update to the latest"
-#sudo apt upgrade -y
+echo "###### Update Packages list"
+sudo apt update
+echo
+echo "###### Update to the latest"
+sudo apt upgrade -y
 echo
 echo "###### Ensure system packages are installed:"
 sudo apt-get install python3-pip python3-venv python3-numpy git libopenjp2-7 libportaudio2 -y
