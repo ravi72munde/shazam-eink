@@ -3,6 +3,9 @@
 *.pyc
 __pycache__
 .vscode/settings.json
+/shelf/
+/workspace.xml
+.idea/
 config/*
-/spotipienv
+/shazampienv
 /.env

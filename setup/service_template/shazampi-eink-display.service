@@ -1,0 +1,16 @@
+[Unit]
+Description=Shazampi eInk Display service
+After=syslog.target network.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+SyslogIdentifier=shazampi-eink-display
+LimitRTPRIO=99
+Restart=on-failure
+RestartSec=1s
+KillSignal=SIGINT
+EnvironmentFile=/etc/systemd/system/shazampi-eink-display.service.d/shazampi-eink-display_env.conf
+
+[Install]
+WantedBy=multi-user.target

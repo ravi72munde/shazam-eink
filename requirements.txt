@@ -1,4 +1,11 @@
-spotipy
 pillow
 requests
-inky[rpi,example-depends]
+inky[rpi,example-depends]; sys_platform == "linux"
+requests
+scipy
+sounddevice
+requests
+numpy
+shazamio
+librosa
+tflite-runtime; sys_platform == "linux"
