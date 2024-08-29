@@ -1,8 +1,8 @@
-# Shazam E-Ink
+# ShazamPi E-Ink
 ![shazampi-eink Logo](/images/logo.png)
 
 ## Table of Contents
-- [Shazam E-Ink](#shazam-e-ink)
+- [ShazamPi E-Ink](#shazampi-e-ink)
   - [Overview](#overview)
   - [Getting Started](#getting-started)
   - [Configuration](#configuration)
@@ -17,10 +17,10 @@
 This project is a spinoff of the spotipi-eink project but does not use Spotify (or any streaming service) for showing what's playing.  
 It relies on the [Shazamio](https://github.com/shazamio/ShazamIO) project to identify the music playing nearby.
 Even though the reverse-engineered API is free (for now), it's undesirable to record audio and send it to Shazam continuously.  
-To avoid this, we first process the audio recording with a locally running ML model ([YAMNet lite](https://www.tensorflow.org/hub/tutorials/yamnet)), which has "Music" as one of the classes. Once we have high confidence that there is music playing in the surroundings, we then send the audio recording to Shazam for identifying the song.
+To avoid this, we first process the audio recording with a locally running ML model ([YAMNet lite](https://www.tensorflow.org/hub/tutorials/yamnet)), which has "Music" as one of the classes. Once we have high confidence that there is music playing in the surrounding, we then send the audio recording to Shazam for identifying the song.
 
 In my experiments, I've found that a 5-second audio clip was enough for the model to detect music; however, Shazam was more reliable with a 10-second audio recording.  
-The model runs fine on the Pi Zero using the tflite-runtime.
+The model runs perfectly on the Pi Zero using the `tflite-runtime`.
 
 Once the song is identified, its information is displayed on a 4", 5.7", or 7.3" e-ink display.  
 Most of the work for displaying content is derived from [Spotipi-eink](https://github.com/Gabbajoe/spotipi-eink), including many of the instructions listed here.
@@ -49,7 +49,7 @@ After the shazampi-eink is installed, you have a systemd service:
 
 This service runs as the user who executed the setup.sh and should be enabled to autostart on boot.
 
-You control the service via systemctl **start, stop, status** *(service-name)*. For example, to get the status of *shazampi-eink-display.service*:
+You control the service via `systemctl` `start` | `stop` | `status` | `restart` | `enable` | `disable` `<service-name>`. For example, to get the status of `shazampi-eink-display.service`:
 ```bash
 pi@shazampi:~/shazampi-eink $ sudo systemctl status shazampi-eink-display.service
   shazampi-eink-display.service - Shazampi eInk Display service
@@ -88,16 +88,16 @@ journalctl -u shazampi-eink-display.service -b
 
 Shazampi-eink creates its own Python environment.
 
-If you like to manual execute the Python script you have to load into the Virtual Python environment like the following commands shows. You will see then in front of you terminal a **(shazampienv)**:
+If you like to manual execute the Python script you have to load into the Virtual Python environment like the following commands shows. You will see then in front of you terminal a `(shazampienv)`:
 ```
-source shazampi/shazampi-eink/shazampienv/bin/activate
+source ~/shazampi-eink/shazampienv/bin/activate
 ```
 
-If you like to leave the Virtual Python environment just type: **deactivate**
+If you like to leave the Virtual Python environment just type: `deactivate`
 
 
 ## Configuration
-In the file **shazampi/config/eink_options.ini** you can modify:
+In the file `shazampi/config/eink_options.ini` you can modify:
 * the displayed *title* and *artist* text size
 * the direction of how the title or artist text line break will be done, **top-down** or **bottom-up**
 * the offset from display borders
@@ -177,4 +177,6 @@ But I'm sure any mic should work as long as it records with least at 16kHz sampl
 <img src="/images/no_song.jpg" height="350">
 
 ## Notes: 
-* Alternative to Shazam: https://audd.io/
+* Alternative to Shazam: https://audd.io/ | Paid with a trial
+* If you want to port the app to a non-raspberry pi hardward refer to [Google's kaggle project](https://www.kaggle.com/models/google/yamnet/tensorFlow2/yamnet/) for samples as well as the model to run on tensorflow
+* The model is able to identify most of the music but can (although rarely) have trouble identifying Raps songs with a lot more speech
