@@ -168,13 +168,13 @@ But I'm sure any mic should work as long as it records with least at 16kHz sampl
 * [Enclosure for pimoroni Inky Impression (ePaper/eInk/EPD) and raspberry pi zero](https://cults3d.com/en/3d-model/gadget/enclosure-for-pimoroni-inky-impression-epaper-eink-epd-and-raspberry-pi-zero)
 
 
-[//]: # (## Show case)
+## Show case
 
 [//]: # (Example picture of my 4" display in the Pimoroni Desktop case:)
 
 [//]: # (![shazampi-eink Logo]&#40;/images/example.jpg&#41;)
-
-[//]: # (![shazampi-eink Logo]&#40;/images/no_song.jpg&#41;)
+### Default view when no song playing on Waveshare 4.01 color display
+<img src="/images/no_song.jpg" height="350">
 
 ## Notes: 
 * Alternative to Shazam: https://audd.io/
