@@ -5,7 +5,6 @@ import requests
 
 class WeatherService:
     def __init__(self, api_key, geo_coordinates, units='imperial'):
-
         lat, lon = map(lambda x: x.strip(), geo_coordinates.split(','))
         self.full_url = (
             f'https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}'
@@ -31,7 +30,7 @@ class WeatherService:
         weather_sub_description = f'Feels like {feels_like}. {condition_str}'
 
         return {'temperature': temperature,
-                'weather_sub_description': weather_sub_description.capitalize(),
+                'weather_sub_description': weather_sub_description.title(),
                 'fetched_at': datetime.datetime.now()
                 }
 
