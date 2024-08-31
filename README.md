@@ -32,8 +32,10 @@ This has been tried and tested on the Raspberry Pi Zero 2W, so it should work on
     ```bash
     sudo raspi-config
     ```
+* Create an account at https://openweathermap.org/ and get api_key(free account)
+* Locate your geo co-ordinates using Google Maps(right-click on the location)
 
-* Download the install script:
+* Download the setup script:
     ```bash
     wget https://raw.githubusercontent.com/ravi72munde/shazampi-eink/main/setup.sh
     chmod +x setup.sh
@@ -64,7 +66,7 @@ pi@shazampi:~/shazampi-eink $ sudo systemctl status shazampi-eink-display.servic
              └─2084 /home/pi/shazampi-eink/shazampienv/bin/python3 /home/pi/shazampi-eink/python/shazam>
 
 Aug 28 22:12:00 shazampi shazampi-eink-display[2084]: Shazampi eInk Display - music detected, identifying...
-Aug 28 22:13:17 shazampi shazampi-eink-display[2084]: Shazampi eInk Display - "will wake up after 30 sec
+Aug 28 22:13:17 shazampi shazampi-eink-display[2084]: Shazampi eInk Display - will wake up after 30 sec
 
 ```
 
@@ -104,7 +106,7 @@ In the file `shazampi/config/eink_options.ini` you can modify:
 * disable the small album cover
 * the size of the small album cover
 * the font that will be used
-
+* weather api key, location and units 
 Example config:
 
 ```
@@ -134,6 +136,9 @@ offset_text_px_shadow = 4
 text_direction = bottom-up
 ; possible modes are fit or repeat
 background_mode = fit
+openweathermap_api_key = random_id
+geo_coordinates = 40.7484907432474, -73.98564504449533
+units=imperial
 ```
 
 ## Supported Hardware
