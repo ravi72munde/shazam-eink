@@ -31,7 +31,6 @@ echo "###### Clone shazampi-eink git"
 git clone https://github.com/ravi72munde/shazampi-eink
 echo "Switching into installation directory"
 cd shazampi-eink
-git checkout dev-01
 install_path=$(pwd)
 echo
 echo "##### Creating shazampi Python environment"
@@ -67,7 +66,6 @@ do
             echo "height = 400" >> ${install_path}/config/eink_options.ini
             echo "album_cover_small_px = 200" >> ${install_path}/config/eink_options.ini
             echo "model = inky" >> ${install_path}/config/eink_options.ini
-            export BUTTONS=1
             break
             ;;
         "Waveshare 4.01inch ACeP 4 (640x400)")
@@ -76,7 +74,6 @@ do
             echo "height = 400" >> ${install_path}/config/eink_options.ini
             echo "album_cover_small_px = 200" >> ${install_path}/config/eink_options.ini
             echo "model = waveshare4" >> ${install_path}/config/eink_options.ini
-            export BUTTONS=0
             break
             ;;
         "Pimoroni Inky Impression 5.7 (600x448)")
@@ -85,7 +82,6 @@ do
             echo "height = 448" >> ${install_path}/config/eink_options.ini
             echo "album_cover_small_px = 250" >> ${install_path}/config/eink_options.ini
             echo "model = inky" >> ${install_path}/config/eink_options.ini
-            export BUTTONS=1
             break
             ;;
         "Pimoroni Inky Impression 7.3 (800x480)")
@@ -94,7 +90,6 @@ do
             echo "height = 480" >> ${install_path}/config/eink_options.ini
             echo "album_cover_small_px = 300" >> ${install_path}/config/eink_options.ini
             echo "model = inky" >> ${install_path}/config/eink_options.ini
-            export BUTTONS=1
             break
             ;;
         *)
@@ -126,6 +121,17 @@ echo "text_direction = bottom-up" >> ${install_path}/config/eink_options.ini
 echo "; possible modes are fit or repeat" >> ${install_path}/config/eink_options.ini
 echo "background_mode = fit" >> ${install_path}/config/eink_options.ini
 echo "done creation default config  ${install_path}/config/eink_options.ini"
+
+echo '###### Let us setup weather api'
+echo "Enter your Openweathermap api key from openweathermap.org"
+read openweathermap_api_key
+echo "Enter your location coordinates in the 'latidute,longitue' format"
+read geo_coordinates
+
+
+echo "openweathermap_api_key = ${openweathermap_api_key}" >> ${install_path}/config/eink_options.ini
+echo "geo_coordinates = ${geo_coordinates}" >> ${install_path}/config/eink_options.ini
+echo "units=imperial"  >> ${install_path}/config/eink_options.ini
 
 if ! [ -d "${install_path}/log" ]; then
     echo "creating ${install_path}/log"
