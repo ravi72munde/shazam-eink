@@ -1,3 +1,4 @@
+import datetime
 import time
 import sys
 import logging
@@ -15,6 +16,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageEnhance
 from service.audio_service import AudioService
 from service.music_detector import MusicDetector
 from service.shazam_service import ShazamService
+from service.weather_service import WeatherService
 
 SongInfo = namedtuple('SongInfo', ['title', 'artist', 'album_art'])
 
@@ -31,9 +33,7 @@ class ShazampiEinkDisplay:
         signal.signal(signal.SIGTERM, self._handle_sigterm)
         self.delay = delay
         self.recording_duration = recording_duration
-        self.audio_service = AudioService()
-        self.music_detector = MusicDetector(self.recording_duration)
-        self.shazam_service = ShazamService()
+
         # Configuration for the matrix
         self.config = configparser.ConfigParser()
         self.config.read(os.path.join(os.path.dirname(__file__), '..', 'config', 'eink_options.ini'))
@@ -44,6 +44,19 @@ class ShazampiEinkDisplay:
         # automatically deletes logs more than 2000 bytes
         handler = RotatingFileHandler(self.config.get('DEFAULT', 'shazampi_log'), maxBytes=2000, backupCount=3)
         logger.addHandler(handler)
+
+        # setup services
+        self.audio_service = AudioService()
+        self.music_detector = MusicDetector(self.recording_duration)
+        self.shazam_service = ShazamService()
+
+        openweathermap_api_key = self.config.get('DEFAULT', 'openweathermap_api_key')
+        geo_coordinates = self.config.get('DEFAULT', 'geo_coordinates')
+        units = self.config.get('DEFAULT', 'units')
+        self.weather_service = WeatherService(api_key=openweathermap_api_key,
+                                              geo_coordinates=geo_coordinates,
+                                              units=units)
+
         # prep some vars before entering service loop
         self.pic_counter = 0
         self.current_view = ViewState.UNKNOWN
@@ -289,7 +302,7 @@ class ShazampiEinkDisplay:
                                      x_end_offset=offset_px_right, offset_text_px_shadow=offset_text_px_shadow)
         return image_new
 
-    def _display_update_process(self, song_info: SongInfo = None):
+    def _display_update_process(self, song_info: SongInfo = None, weather_info=None):
         """
         Args:
             song_info (SongInfo)
@@ -300,6 +313,12 @@ class ShazampiEinkDisplay:
             # download cover
             image = self._gen_pic(Image.open(requests.get(song_info.album_art, stream=True).raw), song_info.artist,
                                   song_info.title)
+        elif weather_info:
+
+            # not song playing use logo + weather info
+            image = self._gen_pic(Image.open(self.config.get('DEFAULT', 'no_song_cover')),
+                                  weather_info['weather_sub_description'],
+                                  weather_info['temperature'])
         else:
             # not song playing use logo
             image = self._gen_pic(Image.open(self.config.get('DEFAULT', 'no_song_cover')), 'shazampi-eink',
@@ -338,12 +357,13 @@ class ShazampiEinkDisplay:
         # clean screen initially
         self._display_clean()
         prev_song_title = None
+        weather_info = self.weather_service.get_weather_data()
         try:
             while True:
                 try:
                     song_info = self._get_song_info()
                     if song_info and song_info.title != prev_song_title:
-                        self._display_update_process(song_info)
+                        self._display_update_process(song_info=song_info)
                         self.current_view = ViewState.PLAYING
                         prev_song_title = song_info.title
                         # average song time is 3-5 min so safe to sleep
@@ -351,10 +371,18 @@ class ShazampiEinkDisplay:
                         time.sleep(self.delay)  # sleep more avoid detecting same song again
                     elif song_info is None:
                         # nothing playing to set display to NO SONG view
+
                         # no need to reset everytime
                         if self.current_view != ViewState.NOTHING_PLAYING:
-                            self._display_update_process()
+                            self._display_update_process(weather_info=weather_info)
                             self.current_view = ViewState.NOTHING_PLAYING
+
+                        # weather data outdated after 30 min, update
+                        elif datetime.datetime.now() - weather_info['fetched_at'] >= datetime.timedelta(minutes=30):
+                            weather_info = self.weather_service.get_weather_data()
+                            self._display_update_process(weather_info=weather_info)
+                            self.current_view = ViewState.NOTHING_PLAYING
+
                 except Exception as e:
                     self.logger.error(f'Error: {e}')
                     self.logger.error(traceback.format_exc())
