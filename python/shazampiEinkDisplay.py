@@ -339,8 +339,6 @@ class ShazampiEinkDisplay:
         Returns:
             SongInfo: with song name, album cover url, artist's name's
         """
-        self.logger.debug("music detected, identifying....")
-        # music detected, identify using shazam
         wav_audio = self.audio_service.convert_audio_to_wav_format(raw_audio)
         song_info_dict = self.shazam_service.identify_song(wav_audio)
         if song_info_dict:
@@ -367,10 +365,12 @@ class ShazampiEinkDisplay:
                     is_music_playing = self.music_detector.is_audio_music(raw_audio)
                     if is_music_playing:
                         # music is playing but check if we should re-trigger shazam
-                        # if :
                         #   music was stopped in previous iteration i.e !was_music_playing
-                        #   song_info is not outdated yet
+                        #   OR
+                        #   song_info is outdated
                         if not was_music_playing or datetime.datetime.now() - last_music_detection_time >= datetime.timedelta(seconds=self.delay):
+                            self.logger.debug("music detected, identifying....")
+                            # music detected, identify using shazam
                             song_info = self._get_song_info(raw_audio)
                             last_music_detection_time = datetime.datetime.now()
                         was_music_playing = True
