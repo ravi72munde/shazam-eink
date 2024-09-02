@@ -393,6 +393,7 @@ class ShazampiEinkDisplay:
                         if self.current_view != ViewState.NOTHING_PLAYING:
                             self._display_update_process(weather_info=weather_info)
                             self.current_view = ViewState.NOTHING_PLAYING
+                            prev_song_title = None
 
                         # weather data outdated after 30 min, update
                         elif datetime.datetime.now() - weather_info['fetched_at'] >= datetime.timedelta(minutes=30):
