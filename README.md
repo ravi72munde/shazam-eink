@@ -161,12 +161,13 @@ But I'm sure any mic should work as long as it records with least at 16kHz sampl
 
 ## 3D printing
 ### Free cases
+* [Shazampi-eink Waveshare 4 inch case](https://www.printables.com/model/993754-shazampi-eink-waveshare-4-inch-case)
 * [SpotiPi E-Ink - Inky Impression 5.7" Case](https://cults3d.com/en/3d-model/gadget/spotipi-e-ink-inky-impression-5-7-case)
 * [Pimoroni Inky Impression Case - 5.7" I guess](https://www.printables.com/de/model/51765-pimoroni-inky-impression-case/files)
 * [Inky Impression 5.7" Frame](https://www.printables.com/de/model/603008-inky-impression-57-frame)
 * [Inky Impression 7.3 e-Paper frame/case](https://www.printables.com/de/model/585713-inky-impression-73-e-paper-framecase)
 * [Pimoroni 7 color EInk display Frame](https://www.thingiverse.com/thing:4666925)
-* [Shazampi-eink Waveshare 4 inch case](https://www.printables.com/model/634213-spotipi-eink-waveshare-4-inch-case)
+* [Spotipi-eink Waveshare 4 inch case](https://www.printables.com/model/634213-spotipi-eink-waveshare-4-inch-case)
 ### Non-free cases from Pimoroni
 * [Desktop Case for pimoroni Inky Impression 4" (7 colour ePaper/eInk HAT) and Raspberry Pi Zero/3 A+](https://cults3d.com/en/3d-model/gadget/desktop-case-for-pimoroni-inky-impression-4-7-colour-epaper-eink-hat-and-raspberry-pi-zero-3-a)
 * [Picture frame for pimoroni Inky Impression 5.7" (ePaper/eInk/EPD) and raspberry pi zero](https://cults3d.com/en/3d-model/gadget/picture-frame-for-pimoroni-inky-impression-epaper-eink-epd-and-raspberry-pi-zero)
@@ -175,9 +176,9 @@ But I'm sure any mic should work as long as it records with least at 16kHz sampl
 
 ## Show case
 
-[//]: # (Example picture of my 4" display in the Pimoroni Desktop case:)
+### Example picture of 4" display in custom case:
+<img src="/images/example.png" height="350">
 
-[//]: # (![shazampi-eink Logo]&#40;/images/example.jpg&#41;)
 ### Default view when no song playing on Waveshare 4.01 color display
 <img src="/images/no_song.jpg" height="350">
 
