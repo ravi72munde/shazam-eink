@@ -357,7 +357,6 @@ class ShazampiEinkDisplay:
         weather_info = self.weather_service.get_weather_data()
         was_music_playing = False
         last_music_detection_time = datetime.datetime.now()
-        song_info: None | SongInfo = None
         try:
             while True:
                 try:
@@ -368,31 +367,29 @@ class ShazampiEinkDisplay:
                         #   music was stopped in previous iteration i.e !was_music_playing
                         #   OR
                         #   song_info is outdated
-                        if not was_music_playing or datetime.datetime.now() - last_music_detection_time >= datetime.timedelta(seconds=self.delay):
+                        if not was_music_playing or datetime.datetime.now() - last_music_detection_time >= datetime.timedelta(
+                                seconds=self.delay):
                             self.logger.debug("music detected, identifying....")
                             # music detected, identify using shazam
                             song_info = self._get_song_info(raw_audio)
+                            if song_info and song_info.title != prev_song_title:
+                                self._display_update_process(song_info=song_info)
+                                self.current_view = ViewState.PLAYING
+                                prev_song_title = song_info.title
                             last_music_detection_time = datetime.datetime.now()
                         was_music_playing = True
-
                     else:
                         if was_music_playing:
                             self.logger.debug("music stopped...")
                         was_music_playing = False
 
-                    if song_info and song_info.title != prev_song_title:
-                        self._display_update_process(song_info=song_info)
-                        self.current_view = ViewState.PLAYING
-                        prev_song_title = song_info.title
-
-                    elif (not was_music_playing
-                          and datetime.datetime.now() - last_music_detection_time >= datetime.timedelta(minutes=1)):
+                    if (not was_music_playing
+                            and datetime.datetime.now() - last_music_detection_time >= datetime.timedelta(minutes=1)):
                         # nothing playing to set display to NO SONG view
 
                         # no need to reset everytime
                         if self.current_view != ViewState.NOTHING_PLAYING:
                             self._display_update_process(weather_info=weather_info)
-                            self.current_view = ViewState.NOTHING_PLAYING
                             prev_song_title = None
 
                         # weather data outdated after 30 min, update
@@ -400,6 +397,8 @@ class ShazampiEinkDisplay:
                             weather_info = self.weather_service.get_weather_data()
                             self._display_update_process(weather_info=weather_info)
                             self.current_view = ViewState.NOTHING_PLAYING
+
+                        self.current_view = ViewState.NOTHING_PLAYING
 
                 except Exception as e:
                     self.logger.error(f'Error: {e}')
