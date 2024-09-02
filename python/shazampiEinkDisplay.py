@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import time
 import sys
@@ -29,7 +31,7 @@ class ViewState(Enum):
 
 
 class ShazampiEinkDisplay:
-    def __init__(self, delay=30, recording_duration=10):
+    def __init__(self, delay=90, recording_duration=10):
         signal.signal(signal.SIGTERM, self._handle_sigterm)
         self.delay = delay
         self.recording_duration = recording_duration
@@ -331,45 +333,60 @@ class ShazampiEinkDisplay:
         self._display_image(image)
         self.pic_counter += 1
 
-    def _get_song_info(self) -> SongInfo:
+    def _get_song_info(self, raw_audio) -> SongInfo:
         """get the currently playing song
 
         Returns:
             SongInfo: with song name, album cover url, artist's name's
         """
-        # record audio for n seconds
-        raw_audio = self.audio_service.record_raw_audio(self.recording_duration)
-        if self.music_detector.is_audio_music(raw_audio):
-            self.logger.debug("music detected, identifying....")
-            # music detected, identify using shazam
-            wav_audio = self.audio_service.convert_audio_to_wav_format(raw_audio)
-            song_info_dict = self.shazam_service.identify_song(wav_audio)
-            if song_info_dict:
-                logging.debug("found song")
-                return SongInfo(title=song_info_dict['title'],
-                                artist=song_info_dict['artist'],
-                                album_art=song_info_dict['album_art'])
-            else:
-                logging.debug("couldn't identify the music")
+        self.logger.debug("music detected, identifying....")
+        # music detected, identify using shazam
+        wav_audio = self.audio_service.convert_audio_to_wav_format(raw_audio)
+        song_info_dict = self.shazam_service.identify_song(wav_audio)
+        if song_info_dict:
+            logging.debug("found song")
+            return SongInfo(title=song_info_dict['title'],
+                            artist=song_info_dict['artist'],
+                            album_art=song_info_dict['album_art'])
+        else:
+            logging.debug("couldn't identify the music")
 
     def start(self):
         self.logger.info('Service started')
         # clean screen initially
-        self._display_clean()
+        # self._display_clean()
         prev_song_title = None
         weather_info = self.weather_service.get_weather_data()
+        was_music_playing = False
+        last_music_detection_time = datetime.datetime.now()
+        song_info: None | SongInfo = None
         try:
             while True:
                 try:
-                    song_info = self._get_song_info()
+                    raw_audio = self.audio_service.record_raw_audio(self.recording_duration)
+                    is_music_playing = self.music_detector.is_audio_music(raw_audio)
+                    if is_music_playing:
+                        # music is playing but check if we should re-trigger shazam
+                        # if :
+                        #   music was stopped in previous iteration i.e !was_music_playing
+                        #   song_info is not outdated yet
+                        if not was_music_playing or datetime.datetime.now() - last_music_detection_time >= datetime.timedelta(seconds=self.delay):
+                            song_info = self._get_song_info(raw_audio)
+                            last_music_detection_time = datetime.datetime.now()
+                        was_music_playing = True
+
+                    else:
+                        if was_music_playing:
+                            self.logger.debug("music stopped...")
+                        was_music_playing = False
+
                     if song_info and song_info.title != prev_song_title:
                         self._display_update_process(song_info=song_info)
                         self.current_view = ViewState.PLAYING
                         prev_song_title = song_info.title
-                        # average song time is 3-5 min so safe to sleep
-                        self.logger.debug(f'"will wake up after {self.delay} seconds"')
-                        time.sleep(self.delay)  # sleep more avoid detecting same song again
-                    elif song_info is None:
+
+                    elif (not was_music_playing
+                          and datetime.datetime.now() - last_music_detection_time >= datetime.timedelta(minutes=1)):
                         # nothing playing to set display to NO SONG view
 
                         # no need to reset everytime
@@ -386,7 +403,6 @@ class ShazampiEinkDisplay:
                 except Exception as e:
                     self.logger.error(f'Error: {e}')
                     self.logger.error(traceback.format_exc())
-                time.sleep(self.delay)
         except KeyboardInterrupt:
             self.logger.info('Service stopping')
             sys.exit(0)
