@@ -179,10 +179,10 @@ But I'm sure any mic should work as long as it records with least at 16kHz sampl
 ### Example picture of 4" display in custom case:
 <img src="/images/example.png" height="350">
 
-### Default view when no song playing on Waveshare 4.01 color display
+### Default view when no song playing on Waveshare 4.01 color display with weather info
 <img src="/images/no_song.jpg" height="350">
 
 ## Notes: 
-* Alternative to Shazam: https://audd.io/ | Paid with a trial
+* Alternative to Shazam: https://audd.io/ (paid),  https://acoustid.org/webservice (open source but needs some work)
 * If you want to port the app to a non-raspberry pi hardward refer to [Google's kaggle project](https://www.kaggle.com/models/google/yamnet/tensorFlow2/yamnet/) for samples as well as the model to run on tensorflow
 * The model is able to identify most of the music but can (although rarely) have trouble identifying Raps songs with a lot more speech
