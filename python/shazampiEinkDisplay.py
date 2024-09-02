@@ -354,7 +354,7 @@ class ShazampiEinkDisplay:
     def start(self):
         self.logger.info('Service started')
         # clean screen initially
-        # self._display_clean()
+        self._display_clean()
         prev_song_title = None
         weather_info = self.weather_service.get_weather_data()
         was_music_playing = False
