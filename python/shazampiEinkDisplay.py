@@ -20,7 +20,7 @@ from service.music_detector import MusicDetector
 from service.shazam_service import ShazamService
 from service.weather_service import WeatherService
 
-SongInfo = namedtuple('SongInfo', ['title', 'artist', 'album_art'])
+SongInfo = namedtuple('SongInfo', ['title', 'artist', 'album_art', 'offset', 'song_duration'])
 
 
 class ViewState(Enum):
@@ -31,7 +31,7 @@ class ViewState(Enum):
 
 
 class ShazampiEinkDisplay:
-    def __init__(self, delay=90, recording_duration=10):
+    def __init__(self, delay=120, recording_duration=10):
         signal.signal(signal.SIGTERM, self._handle_sigterm)
         self.delay = delay
         self.recording_duration = recording_duration
@@ -345,7 +345,9 @@ class ShazampiEinkDisplay:
             logging.debug("found song")
             return SongInfo(title=song_info_dict['title'],
                             artist=song_info_dict['artist'],
-                            album_art=song_info_dict['album_art'])
+                            album_art=song_info_dict['album_art'],
+                            song_duration=song_info_dict['song_duration'],
+                            offset=song_info_dict['offset'])
         else:
             logging.debug("couldn't identify the music")
 
@@ -357,6 +359,7 @@ class ShazampiEinkDisplay:
         weather_info = self.weather_service.get_weather_data()
         was_music_playing = False
         last_music_detection_time = datetime.datetime.now()
+        song_end_duration_left = self.delay
         try:
             while True:
                 try:
@@ -368,10 +371,25 @@ class ShazampiEinkDisplay:
                         #   OR
                         #   song_info is outdated
                         if not was_music_playing or datetime.datetime.now() - last_music_detection_time >= datetime.timedelta(
-                                seconds=self.delay):
+                                seconds=song_end_duration_left):
                             self.logger.debug("music detected, identifying....")
                             # music detected, identify using shazam
                             song_info = self._get_song_info(raw_audio)
+
+                            if song_info:
+                                self.logger.debug("identified....")
+                                # update remaining time to wait for next re-identify
+                                if song_info.song_duration is None or song_info.offset is None:
+                                    song_end_duration_left = self.delay
+                                else:
+                                    song_end_duration_left = max(self.delay,
+                                                                 song_info.song_duration-song_info.offset-self.recording_duration)
+                            else:
+                                self.logger.debug("couldn't identify the song")
+                                song_end_duration_left = 30  # couldn't identify song so retry in 30 sec
+
+                            self.logger.debug(f"won't re-identify for {song_end_duration_left} seconds")
+
                             if song_info and song_info.title != prev_song_title:
                                 self._display_update_process(song_info=song_info)
                                 self.current_view = ViewState.PLAYING
